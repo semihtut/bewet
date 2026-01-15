@@ -3,6 +3,9 @@ import { ProgressRing, Chip, Button, BottomSheet, Input } from '@/components/ui'
 import { ReminderBanner } from '@/components/ReminderBanner';
 import { WaterDrop } from '@/components/WaterDrop';
 import { Confetti } from '@/components/Confetti';
+import { StreakBadge } from '@/components/StreakBadge';
+import { LoveNoteModal } from '@/components/LoveNoteModal';
+import { AchievementModal } from '@/components/AchievementModal';
 import { useI18n, getGreetingKey } from '@/lib/i18n';
 import { useReminderCheck } from '@/lib/reminders';
 import { useHydration } from '@/hooks/useHydration';
@@ -17,7 +20,16 @@ const QUICK_AMOUNTS = [200, 300, 500];
 export function Home({ goal }: HomeProps) {
   const { t } = useI18n();
   const reminder = useReminderCheck();
-  const { todayTotal, goalReached, addWater } = useHydration(goal);
+  const {
+    todayTotal,
+    goalReached,
+    addWater,
+    milestoneCrossed,
+    loveNoteMessage,
+    clearMilestone,
+    newlyUnlockedAchievement,
+    clearNewlyUnlockedAchievement
+  } = useHydration(goal);
 
   const [showSheet, setShowSheet] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
@@ -84,8 +96,13 @@ export function Home({ goal }: HomeProps) {
         />
       )}
 
+      {/* Streak Badge */}
+      <div className="mb-4">
+        <StreakBadge />
+      </div>
+
       {/* Greeting */}
-      <h1 className="text-2xl font-semibold text-text-primary mb-8">
+      <h1 className="text-2xl font-semibold text-text-primary mb-6">
         {greeting} 💕
       </h1>
 
@@ -129,6 +146,20 @@ export function Home({ goal }: HomeProps) {
 
       {/* Confetti celebration */}
       <Confetti show={showConfetti} />
+
+      {/* Love Note Modal */}
+      <LoveNoteModal
+        isOpen={milestoneCrossed !== null}
+        message={loveNoteMessage}
+        milestone={milestoneCrossed || 25}
+        onClose={clearMilestone}
+      />
+
+      {/* Achievement Modal */}
+      <AchievementModal
+        achievementId={newlyUnlockedAchievement}
+        onClose={clearNewlyUnlockedAchievement}
+      />
 
       {/* Add Water Bottom Sheet */}
       <BottomSheet

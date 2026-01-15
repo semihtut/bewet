@@ -123,6 +123,16 @@ const translations: TranslationDict = {
   'nav.home': { en: 'Home', ru: 'Главная' },
   'nav.history': { en: 'History', ru: 'История' },
   'nav.settings': { en: 'Settings', ru: 'Настройки' },
+
+  // Streak
+  'streak.days': { en: 'days', ru: 'дн.' },
+  'streak.none': { en: 'Start your streak!', ru: 'Начни серию!' },
+  'streak.sprout': { en: 'Sprout', ru: 'Росток' },
+  'streak.growing': { en: 'Growing', ru: 'Растёт' },
+  'streak.thriving': { en: 'Thriving', ru: 'Цветёт' },
+  'streak.master': { en: 'Hydration Master', ru: 'Мастер гидратации' },
+  'streak.longest': { en: 'Longest streak', ru: 'Лучшая серия' },
+  'streak.current': { en: 'Current streak', ru: 'Текущая серия' },
 };
 
 // i18n store interface

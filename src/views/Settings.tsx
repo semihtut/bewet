@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { GlassCard, Button, Toggle, Slider, BottomSheet, Input } from '@/components/ui';
+import { AchievementBadge } from '@/components/AchievementBadge';
 import { useI18n } from '@/lib/i18n';
 import { useReminderStore, generateScheduleTimes } from '@/lib/reminders';
 import { exportAllData, resetAllData, downloadJSON } from '@/lib/storage';
+import { useStreakStore } from '@/lib/streak';
 import { formatTime, parseTime } from '@/lib/utils';
 import type { AppSettings, Language } from '@/types';
 
@@ -14,6 +16,7 @@ interface SettingsProps {
 export function Settings({ settings, onUpdate }: SettingsProps) {
   const { t, language, setLanguage } = useI18n();
   const { schedule, setSchedule } = useReminderStore();
+  const { currentStreak, longestStreak } = useStreakStore();
 
   const [showGoalSheet, setShowGoalSheet] = useState(false);
   const [showRemindersSheet, setShowRemindersSheet] = useState(false);
@@ -110,6 +113,25 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             {schedule.enabled ? `${scheduleTimes.length}×` : 'Off'}
           </span>
         </button>
+      </GlassCard>
+
+      {/* Achievements Section */}
+      <p className="text-sm text-text-secondary uppercase tracking-wide mb-2 px-1">
+        {language === 'en' ? 'Achievements' : 'Достижения'}
+      </p>
+      <GlassCard className="mb-6 p-4">
+        {/* Streak stats */}
+        <div className="flex justify-around mb-4 pb-4 border-b border-pink-100/50">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-pink-500">{currentStreak}</p>
+            <p className="text-xs text-text-secondary">{t('streak.current')}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-amber-500">{longestStreak}</p>
+            <p className="text-xs text-text-secondary">{t('streak.longest')}</p>
+          </div>
+        </div>
+        <AchievementBadge />
       </GlassCard>
 
       {/* Data Section */}
