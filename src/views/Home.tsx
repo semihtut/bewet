@@ -17,7 +17,7 @@ const QUICK_AMOUNTS = [200, 300, 500];
 export function Home({ goal }: HomeProps) {
   const { t } = useI18n();
   const reminder = useReminderCheck();
-  const { todayTotal, progress, goalReached, addWater } = useHydration(goal);
+  const { todayTotal, goalReached, addWater } = useHydration(goal);
 
   const [showSheet, setShowSheet] = useState(false);
   const [customAmount, setCustomAmount] = useState('');

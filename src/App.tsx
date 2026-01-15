@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { TabBar } from '@/components/ui';
 import { Home } from '@/views/Home';
 import { History } from '@/views/History';
@@ -8,7 +8,7 @@ import { useSettings } from '@/hooks/useSettings';
 import type { TabId, Language } from '@/types';
 
 export function App() {
-  const { settings, isLoading, update, completeOnboarding } = useSettings();
+  const { settings, isLoading, update } = useSettings();
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   // Handle onboarding completion
