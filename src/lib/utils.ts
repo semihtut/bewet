@@ -1,8 +1,35 @@
-import { type ClassValue, clsx } from 'clsx';
+// Class name utility - simple implementation
+type ClassValue = string | number | boolean | undefined | null | ClassValue[] | Record<string, unknown>;
 
-// Simple clsx implementation since we're not using the full library
 export function cn(...inputs: ClassValue[]): string {
   return clsx(inputs);
+}
+
+function clsx(...inputs: ClassValue[]): string {
+  let result = '';
+
+  for (const input of inputs) {
+    if (!input) continue;
+
+    if (typeof input === 'string') {
+      result += (result ? ' ' : '') + input;
+    } else if (typeof input === 'number') {
+      result += (result ? ' ' : '') + input;
+    } else if (Array.isArray(input)) {
+      const inner = clsx(...input);
+      if (inner) {
+        result += (result ? ' ' : '') + inner;
+      }
+    } else if (typeof input === 'object') {
+      for (const [key, value] of Object.entries(input)) {
+        if (value) {
+          result += (result ? ' ' : '') + key;
+        }
+      }
+    }
+  }
+
+  return result;
 }
 
 // Format number with locale
@@ -88,33 +115,4 @@ export function formatRelativeDate(
   const date = new Date(dateStr);
   const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   return t(`days.${days[date.getDay()]}`);
-}
-
-// clsx implementation for class merging
-type ClassDictionary = Record<string, unknown>;
-type ClassArray = ClassValue[];
-
-function clsx(...inputs: ClassValue[]): string {
-  let result = '';
-
-  for (const input of inputs) {
-    if (!input) continue;
-
-    if (typeof input === 'string') {
-      result += (result ? ' ' : '') + input;
-    } else if (Array.isArray(input)) {
-      const inner = clsx(...(input as ClassArray));
-      if (inner) {
-        result += (result ? ' ' : '') + inner;
-      }
-    } else if (typeof input === 'object') {
-      for (const [key, value] of Object.entries(input as ClassDictionary)) {
-        if (value) {
-          result += (result ? ' ' : '') + key;
-        }
-      }
-    }
-  }
-
-  return result;
 }
