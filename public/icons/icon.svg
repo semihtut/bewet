@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDF8F6"/>
+      <stop offset="100%" stop-color="#FFF0F3"/>
+    </linearGradient>
+    <linearGradient id="dropGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#F472B6"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#EC4899" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
+
+  <!-- Water drop -->
+  <path
+    d="M256 96
+       C256 96 144 224 144 320
+       C144 384 192 432 256 432
+       C320 432 368 384 368 320
+       C368 224 256 96 256 96Z"
+    fill="url(#dropGrad)"
+    filter="url(#shadow)"
+  />
+
+  <!-- Highlight -->
+  <ellipse cx="200" cy="280" rx="24" ry="40" fill="white" opacity="0.4"/>
+</svg>

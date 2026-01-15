@@ -1,0 +1,182 @@
+import { useState, useCallback } from 'react';
+import { ProgressRing, Chip, Button, BottomSheet, Input } from '@/components/ui';
+import { ReminderBanner } from '@/components/ReminderBanner';
+import { WaterDrop } from '@/components/WaterDrop';
+import { Confetti } from '@/components/Confetti';
+import { useI18n, getGreetingKey } from '@/lib/i18n';
+import { useReminderCheck } from '@/lib/reminders';
+import { useHydration } from '@/hooks/useHydration';
+import { haptic } from '@/lib/utils';
+
+interface HomeProps {
+  goal: number;
+}
+
+const QUICK_AMOUNTS = [200, 300, 500];
+
+export function Home({ goal }: HomeProps) {
+  const { t } = useI18n();
+  const reminder = useReminderCheck();
+  const { todayTotal, progress, goalReached, addWater } = useHydration(goal);
+
+  const [showSheet, setShowSheet] = useState(false);
+  const [customAmount, setCustomAmount] = useState('');
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [showDrop, setShowDrop] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [wasGoalReached, setWasGoalReached] = useState(goalReached);
+
+  // Handle quick add
+  const handleQuickAdd = useCallback(
+    async (amount: number) => {
+      haptic(15);
+      setShowDrop(true);
+
+      await addWater(amount);
+
+      // Check if goal was just reached
+      if (!wasGoalReached && todayTotal + amount >= goal) {
+        setShowConfetti(true);
+        setWasGoalReached(true);
+      }
+    },
+    [addWater, wasGoalReached, todayTotal, goal]
+  );
+
+  // Handle sheet add
+  const handleSheetAdd = useCallback(async () => {
+    const amount = selectedAmount || parseInt(customAmount) || 0;
+    if (amount <= 0) return;
+
+    haptic(15);
+    setShowSheet(false);
+    setShowDrop(true);
+
+    await addWater(amount);
+
+    // Check if goal was just reached
+    if (!wasGoalReached && todayTotal + amount >= goal) {
+      setShowConfetti(true);
+      setWasGoalReached(true);
+    }
+
+    // Reset
+    setSelectedAmount(null);
+    setCustomAmount('');
+  }, [selectedAmount, customAmount, addWater, wasGoalReached, todayTotal, goal]);
+
+  // Handle chip select in sheet
+  const handleChipSelect = (amount: number) => {
+    setSelectedAmount(amount);
+    setCustomAmount('');
+  };
+
+  // Greeting based on time
+  const greeting = t(getGreetingKey());
+
+  return (
+    <div className="flex flex-col items-center px-4 pt-6 pb-24 animate-page-in">
+      {/* Reminder Banner */}
+      {reminder.isDue && (
+        <ReminderBanner
+          onSnooze={() => reminder.snooze()}
+          onDismiss={() => reminder.dismiss()}
+        />
+      )}
+
+      {/* Greeting */}
+      <h1 className="text-2xl font-semibold text-text-primary mb-8">
+        {greeting} 💕
+      </h1>
+
+      {/* Progress Ring */}
+      <div className="relative mb-8">
+        <ProgressRing
+          value={todayTotal}
+          max={goal}
+          size={220}
+          strokeWidth={14}
+        />
+        <WaterDrop show={showDrop} onComplete={() => setShowDrop(false)} />
+      </div>
+
+      {/* Goal reached message */}
+      {goalReached && (
+        <p className="text-success font-semibold text-lg mb-6 animate-celebrate">
+          {t('home.goalReached')} 🎉
+        </p>
+      )}
+
+      {/* Quick add buttons */}
+      <div className="flex flex-wrap justify-center gap-3 mb-6">
+        {QUICK_AMOUNTS.map((amount) => (
+          <Chip
+            key={amount}
+            onClick={() => handleQuickAdd(amount)}
+          >
+            {amount} {t('units.ml')}
+          </Chip>
+        ))}
+      </div>
+
+      {/* Custom add button */}
+      <Button
+        variant="secondary"
+        onClick={() => setShowSheet(true)}
+      >
+        + {t('home.custom')}
+      </Button>
+
+      {/* Confetti celebration */}
+      <Confetti show={showConfetti} />
+
+      {/* Add Water Bottom Sheet */}
+      <BottomSheet
+        isOpen={showSheet}
+        onClose={() => setShowSheet(false)}
+        title={t('home.addWater')}
+      >
+        <div className="space-y-6">
+          {/* Quick amounts */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {QUICK_AMOUNTS.map((amount) => (
+              <Chip
+                key={amount}
+                selected={selectedAmount === amount}
+                onClick={() => handleChipSelect(amount)}
+              >
+                {amount} {t('units.ml')}
+              </Chip>
+            ))}
+          </div>
+
+          {/* Custom input */}
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="350"
+            value={customAmount}
+            onChange={(e) => {
+              setCustomAmount(e.target.value);
+              setSelectedAmount(null);
+            }}
+            suffix={t('units.ml')}
+            min={1}
+            max={2000}
+          />
+
+          {/* Add button */}
+          <Button
+            fullWidth
+            onClick={handleSheetAdd}
+            disabled={!selectedAmount && !customAmount}
+          >
+            {t('home.add')}{' '}
+            {selectedAmount || customAmount || '...'}{' '}
+            {t('units.ml')}
+          </Button>
+        </div>
+      </BottomSheet>
+    </div>
+  );
+}
