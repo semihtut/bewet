@@ -6,23 +6,37 @@ import { Confetti } from '@/components/Confetti';
 import { StreakBadge } from '@/components/StreakBadge';
 import { LoveNoteModal } from '@/components/LoveNoteModal';
 import { AchievementModal } from '@/components/AchievementModal';
-import { useI18n, getGreetingKey } from '@/lib/i18n';
+import { CaffeineEntriesSheet } from '@/components/CaffeineEntriesSheet';
+import { useI18n, getGreetingKey, pluralizeCup } from '@/lib/i18n';
 import { useReminderCheck } from '@/lib/reminders';
 import { useHydration } from '@/hooks/useHydration';
+import { useCaffeine } from '@/hooks/useCaffeine';
 import { haptic } from '@/lib/utils';
+import type { CaffeineSettings } from '@/types';
 
 interface HomeProps {
   goal: number;
+  caffeineSettings: CaffeineSettings;
 }
 
 const QUICK_AMOUNTS = [200, 300, 500];
 
-export function Home({ goal }: HomeProps) {
-  const { t } = useI18n();
+// Default caffeine settings for migration
+const DEFAULT_CAFFEINE_SETTINGS: CaffeineSettings = {
+  enabled: true,
+  teaPenaltyMl: 250,
+  coffeePenaltyMl: 250,
+};
+
+export function Home({ goal, caffeineSettings }: HomeProps) {
+  const { t, language } = useI18n();
   const reminder = useReminderCheck();
+
+  // Ensure caffeine settings exist
+  const caffSettings = caffeineSettings || DEFAULT_CAFFEINE_SETTINGS;
+
   const {
     todayTotal,
-    goalReached,
     addWater,
     milestoneCrossed,
     loveNoteMessage,
@@ -31,7 +45,23 @@ export function Home({ goal }: HomeProps) {
     clearNewlyUnlockedAchievement
   } = useHydration(goal);
 
+  const {
+    todayEntries: caffeineEntries,
+    todayPenalty,
+    todayTeaCount,
+    todayCoffeeCount,
+    addTea,
+    addCoffee,
+    deleteEntry: deleteCaffeineEntry,
+    updateEntryNote,
+  } = useCaffeine(caffSettings);
+
+  // Calculate effective goal with penalty
+  const effectiveGoal = goal + (caffSettings.enabled ? todayPenalty : 0);
+  const goalReached = todayTotal >= effectiveGoal;
+
   const [showSheet, setShowSheet] = useState(false);
+  const [showCaffeineSheet, setShowCaffeineSheet] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [showDrop, setShowDrop] = useState(false);
@@ -47,12 +77,12 @@ export function Home({ goal }: HomeProps) {
       await addWater(amount);
 
       // Check if goal was just reached
-      if (!wasGoalReached && todayTotal + amount >= goal) {
+      if (!wasGoalReached && todayTotal + amount >= effectiveGoal) {
         setShowConfetti(true);
         setWasGoalReached(true);
       }
     },
-    [addWater, wasGoalReached, todayTotal, goal]
+    [addWater, wasGoalReached, todayTotal, effectiveGoal]
   );
 
   // Handle sheet add
@@ -67,7 +97,7 @@ export function Home({ goal }: HomeProps) {
     await addWater(amount);
 
     // Check if goal was just reached
-    if (!wasGoalReached && todayTotal + amount >= goal) {
+    if (!wasGoalReached && todayTotal + amount >= effectiveGoal) {
       setShowConfetti(true);
       setWasGoalReached(true);
     }
@@ -75,7 +105,18 @@ export function Home({ goal }: HomeProps) {
     // Reset
     setSelectedAmount(null);
     setCustomAmount('');
-  }, [selectedAmount, customAmount, addWater, wasGoalReached, todayTotal, goal]);
+  }, [selectedAmount, customAmount, addWater, wasGoalReached, todayTotal, effectiveGoal]);
+
+  // Handle caffeine add
+  const handleAddCoffee = useCallback(async () => {
+    haptic(10);
+    await addCoffee();
+  }, [addCoffee]);
+
+  const handleAddTea = useCallback(async () => {
+    haptic(10);
+    await addTea();
+  }, [addTea]);
 
   // Handle chip select in sheet
   const handleChipSelect = (amount: number) => {
@@ -107,15 +148,31 @@ export function Home({ goal }: HomeProps) {
       </h1>
 
       {/* Progress Ring */}
-      <div className="relative mb-8">
+      <div className="relative mb-6">
         <ProgressRing
           value={todayTotal}
-          max={goal}
+          max={effectiveGoal}
           size={220}
           strokeWidth={14}
         />
         <WaterDrop show={showDrop} onComplete={() => setShowDrop(false)} />
       </div>
+
+      {/* Penalty indicator (only show when there's a penalty) */}
+      {caffSettings.enabled && todayPenalty > 0 && (
+        <button
+          onClick={() => setShowCaffeineSheet(true)}
+          className="mb-4 px-4 py-2 bg-amber-50 rounded-full border border-amber-200 flex items-center gap-2"
+        >
+          <span className="text-amber-600">
+            ☕ +{todayPenalty} {t('units.ml')}
+          </span>
+          <span className="text-amber-500 text-sm">
+            ({todayCoffeeCount + todayTeaCount} {pluralizeCup(todayCoffeeCount + todayTeaCount, language)})
+          </span>
+          <span className="text-amber-400">▸</span>
+        </button>
+      )}
 
       {/* Goal reached message */}
       {goalReached && (
@@ -125,16 +182,34 @@ export function Home({ goal }: HomeProps) {
       )}
 
       {/* Quick add buttons */}
-      <div className="flex flex-wrap justify-center gap-3 mb-6">
+      <div className="flex flex-wrap justify-center gap-3 mb-4">
         {QUICK_AMOUNTS.map((amount) => (
           <Chip
             key={amount}
             onClick={() => handleQuickAdd(amount)}
           >
-            {amount} {t('units.ml')}
+            💧 {amount} {t('units.ml')}
           </Chip>
         ))}
       </div>
+
+      {/* Caffeine buttons */}
+      {caffSettings.enabled && (
+        <div className="flex justify-center gap-3 mb-4">
+          <Chip
+            onClick={handleAddCoffee}
+            className="bg-amber-50 border-amber-200 text-amber-700"
+          >
+            ☕ {t('caffeine.coffee')}
+          </Chip>
+          <Chip
+            onClick={handleAddTea}
+            className="bg-green-50 border-green-200 text-green-700"
+          >
+            🍵 {t('caffeine.tea')}
+          </Chip>
+        </div>
+      )}
 
       {/* Custom add button */}
       <Button
@@ -159,6 +234,16 @@ export function Home({ goal }: HomeProps) {
       <AchievementModal
         achievementId={newlyUnlockedAchievement}
         onClose={clearNewlyUnlockedAchievement}
+      />
+
+      {/* Caffeine Entries Sheet */}
+      <CaffeineEntriesSheet
+        isOpen={showCaffeineSheet}
+        onClose={() => setShowCaffeineSheet(false)}
+        entries={caffeineEntries}
+        totalPenalty={todayPenalty}
+        onDelete={deleteCaffeineEntry}
+        onUpdateNote={updateEntryNote}
       />
 
       {/* Add Water Bottom Sheet */}

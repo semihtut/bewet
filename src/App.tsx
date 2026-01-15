@@ -49,13 +49,13 @@ export function App() {
   const renderView = () => {
     switch (activeTab) {
       case 'home':
-        return <Home goal={settings.dailyGoal} />;
+        return <Home goal={settings.dailyGoal} caffeineSettings={settings.caffeineSettings} />;
       case 'history':
-        return <History goal={settings.dailyGoal} />;
+        return <History goal={settings.dailyGoal} caffeineSettings={settings.caffeineSettings} />;
       case 'settings':
         return <Settings settings={settings} onUpdate={handleSettingsUpdate} />;
       default:
-        return <Home goal={settings.dailyGoal} />;
+        return <Home goal={settings.dailyGoal} caffeineSettings={settings.caffeineSettings} />;
     }
   };
 

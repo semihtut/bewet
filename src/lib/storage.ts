@@ -1,11 +1,16 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { HydrationEntry, AppSettings, AppData, ReminderSchedule } from '@/types';
+import type { HydrationEntry, CaffeineEntry, AppSettings, AppData, ReminderSchedule, CaffeineSettings } from '@/types';
 
 // Database schema
 interface BeWetDB extends DBSchema {
   entries: {
     key: string;
     value: HydrationEntry;
+    indexes: { 'by-date': string };
+  };
+  caffeineEntries: {
+    key: string;
+    value: CaffeineEntry;
     indexes: { 'by-date': string };
   };
   settings: {
@@ -15,7 +20,7 @@ interface BeWetDB extends DBSchema {
 }
 
 const DB_NAME = 'bewet-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Bumped for caffeine entries store
 
 let dbPromise: Promise<IDBPDatabase<BeWetDB>> | null = null;
 
@@ -29,25 +34,42 @@ const DEFAULT_REMINDER_SCHEDULE: ReminderSchedule = {
   intervalMinutes: 120,
 };
 
+// Default caffeine settings
+const DEFAULT_CAFFEINE_SETTINGS: CaffeineSettings = {
+  enabled: true,
+  teaPenaltyMl: 250,
+  coffeePenaltyMl: 250,
+};
+
 // Default settings
 const DEFAULT_SETTINGS: AppSettings = {
   dailyGoal: 2000,
   language: 'en',
   onboardingComplete: false,
   reminderSchedule: DEFAULT_REMINDER_SCHEDULE,
+  caffeineSettings: DEFAULT_CAFFEINE_SETTINGS,
 };
 
 // Initialize database
 export async function getDB(): Promise<IDBPDatabase<BeWetDB>> {
   if (!dbPromise) {
     dbPromise = openDB<BeWetDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        // Entries store with date index
-        const entryStore = db.createObjectStore('entries', { keyPath: 'id' });
-        entryStore.createIndex('by-date', 'date');
+      upgrade(db, oldVersion) {
+        // Version 1: entries and settings
+        if (oldVersion < 1) {
+          // Entries store with date index
+          const entryStore = db.createObjectStore('entries', { keyPath: 'id' });
+          entryStore.createIndex('by-date', 'date');
 
-        // Settings store
-        db.createObjectStore('settings', { keyPath: 'key' });
+          // Settings store
+          db.createObjectStore('settings', { keyPath: 'key' });
+        }
+
+        // Version 2: caffeine entries
+        if (oldVersion < 2) {
+          const caffeineStore = db.createObjectStore('caffeineEntries', { keyPath: 'id' });
+          caffeineStore.createIndex('by-date', 'date');
+        }
       },
     });
   }
@@ -85,6 +107,42 @@ export async function deleteEntry(id: string): Promise<void> {
   await db.delete('entries', id);
 }
 
+// ===== CAFFEINE ENTRIES =====
+
+export async function addCaffeineEntry(entry: CaffeineEntry): Promise<void> {
+  const db = await getDB();
+  await db.put('caffeineEntries', entry);
+}
+
+export async function getCaffeineEntriesByDate(date: string): Promise<CaffeineEntry[]> {
+  const db = await getDB();
+  return db.getAllFromIndex('caffeineEntries', 'by-date', date);
+}
+
+export async function getCaffeineEntriesForDateRange(
+  startDate: string,
+  endDate: string
+): Promise<CaffeineEntry[]> {
+  const db = await getDB();
+  const range = IDBKeyRange.bound(startDate, endDate);
+  return db.getAllFromIndex('caffeineEntries', 'by-date', range);
+}
+
+export async function getAllCaffeineEntries(): Promise<CaffeineEntry[]> {
+  const db = await getDB();
+  return db.getAll('caffeineEntries');
+}
+
+export async function deleteCaffeineEntry(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('caffeineEntries', id);
+}
+
+export async function updateCaffeineEntry(entry: CaffeineEntry): Promise<void> {
+  const db = await getDB();
+  await db.put('caffeineEntries', entry);
+}
+
 // ===== SETTINGS =====
 
 export async function getSettings(): Promise<AppSettings> {
@@ -111,13 +169,18 @@ export async function updateSettings(
 // ===== DATA MANAGEMENT =====
 
 export async function exportAllData(): Promise<AppData> {
-  const [settings, entries] = await Promise.all([getSettings(), getAllEntries()]);
+  const [settings, entries, caffeineEntries] = await Promise.all([
+    getSettings(),
+    getAllEntries(),
+    getAllCaffeineEntries(),
+  ]);
 
   return {
     settings,
     entries,
+    caffeineEntries,
     exportDate: new Date().toISOString(),
-    version: '1.0.0',
+    version: '1.1.0',
   };
 }
 
@@ -125,10 +188,11 @@ export async function importData(data: AppData): Promise<void> {
   const db = await getDB();
 
   // Clear existing data
-  const tx = db.transaction(['entries', 'settings'], 'readwrite');
+  const tx = db.transaction(['entries', 'settings', 'caffeineEntries'], 'readwrite');
   await Promise.all([
     tx.objectStore('entries').clear(),
     tx.objectStore('settings').clear(),
+    tx.objectStore('caffeineEntries').clear(),
   ]);
   await tx.done;
 
@@ -139,14 +203,22 @@ export async function importData(data: AppData): Promise<void> {
   for (const entry of data.entries) {
     await addEntry(entry);
   }
+
+  // Import caffeine entries (if present)
+  if (data.caffeineEntries) {
+    for (const entry of data.caffeineEntries) {
+      await addCaffeineEntry(entry);
+    }
+  }
 }
 
 export async function resetAllData(): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['entries', 'settings'], 'readwrite');
+  const tx = db.transaction(['entries', 'settings', 'caffeineEntries'], 'readwrite');
   await Promise.all([
     tx.objectStore('entries').clear(),
     tx.objectStore('settings').clear(),
+    tx.objectStore('caffeineEntries').clear(),
   ]);
   await tx.done;
 }

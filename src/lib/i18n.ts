@@ -133,6 +133,30 @@ const translations: TranslationDict = {
   'streak.master': { en: 'Hydration Master', ru: 'Мастер гидратации' },
   'streak.longest': { en: 'Longest streak', ru: 'Лучшая серия' },
   'streak.current': { en: 'Current streak', ru: 'Текущая серия' },
+
+  // Caffeine
+  'caffeine.title': { en: 'Caffeine', ru: 'Кофеин' },
+  'caffeine.coffee': { en: 'Coffee', ru: 'Кофе' },
+  'caffeine.tea': { en: 'Tea', ru: 'Чай' },
+  'caffeine.penalty': { en: 'Penalty', ru: 'Штраф' },
+  'caffeine.penaltyInfo': { en: '+{{amount}} ml extra needed', ru: '+{{amount}} мл дополнительно' },
+  'caffeine.cups': { en: 'cups', ru: 'чашек' },
+  'caffeine.cup': { en: 'cup', ru: 'чашка' },
+  'caffeine.todayEntries': { en: "Today's caffeine", ru: 'Кофеин за сегодня' },
+  'caffeine.noEntries': { en: 'No tea or coffee today', ru: 'Сегодня без чая и кофе' },
+  'caffeine.addNote': { en: 'Add note', ru: 'Добавить заметку' },
+  'caffeine.notePlaceholder': { en: 'e.g., green tea, espresso...', ru: 'напр., зелёный чай, эспрессо...' },
+  'caffeine.deleteConfirm': { en: 'Delete this entry?', ru: 'Удалить эту запись?' },
+  'caffeine.effectiveGoal': { en: 'Today\'s target', ru: 'Цель на сегодня' },
+  'caffeine.baseGoal': { en: 'Base goal', ru: 'Базовая цель' },
+  'caffeine.remaining': { en: 'Remaining', ru: 'Осталось' },
+
+  // Caffeine settings
+  'settings.caffeine': { en: 'Caffeine Penalty', ru: 'Штраф за кофеин' },
+  'settings.caffeineEnable': { en: 'Enable caffeine tracking', ru: 'Учитывать кофеин' },
+  'settings.teaPenalty': { en: 'Tea penalty per cup', ru: 'Штраф за чашку чая' },
+  'settings.coffeePenalty': { en: 'Coffee penalty per cup', ru: 'Штраф за чашку кофе' },
+  'settings.penaltyNote': { en: 'Extra water needed per 250ml serving', ru: 'Доп. вода за порцию 250мл' },
 };
 
 // i18n store interface
@@ -195,6 +219,11 @@ export function pluralizeHour(n: number, lang: Language): string {
 export function pluralizeDay(n: number, lang: Language): string {
   if (lang === 'en') return n === 1 ? 'day' : 'days';
   return ruPlural(n, 'день', 'дня', 'дней');
+}
+
+export function pluralizeCup(n: number, lang: Language): string {
+  if (lang === 'en') return n === 1 ? 'cup' : 'cups';
+  return ruPlural(n, 'чашка', 'чашки', 'чашек');
 }
 
 // Get greeting based on time of day

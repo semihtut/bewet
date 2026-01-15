@@ -6,6 +6,16 @@ export interface HydrationEntry {
   date: string; // 'YYYY-MM-DD'
 }
 
+// Caffeine entry (tea or coffee)
+export interface CaffeineEntry {
+  id: string;
+  type: 'tea' | 'coffee';
+  servings: number; // number of servings (1 serving = 250ml)
+  note?: string; // optional note (e.g., "green tea", "espresso")
+  timestamp: number; // Unix ms
+  date: string; // 'YYYY-MM-DD'
+}
+
 // Daily summary (computed)
 export interface DailySummary {
   date: string;
@@ -13,6 +23,9 @@ export interface DailySummary {
   goal: number;
   entries: number;
   goalReached: boolean;
+  // Caffeine penalty data
+  caffeineEntries?: number;
+  caffeinePenalty?: number;
 }
 
 // Reminder schedule configuration
@@ -32,12 +45,20 @@ export interface ReminderState {
   lastShownTime: number | null;
 }
 
+// Caffeine penalty settings
+export interface CaffeineSettings {
+  enabled: boolean;
+  teaPenaltyMl: number; // ml penalty per serving (0, 125, 250, 375, 500)
+  coffeePenaltyMl: number; // ml penalty per serving
+}
+
 // App settings
 export interface AppSettings {
   dailyGoal: number; // ml
   language: Language;
   onboardingComplete: boolean;
   reminderSchedule: ReminderSchedule;
+  caffeineSettings: CaffeineSettings;
 }
 
 // Supported languages
@@ -50,6 +71,7 @@ export type TabId = 'home' | 'history' | 'settings';
 export interface AppData {
   settings: AppSettings;
   entries: HydrationEntry[];
+  caffeineEntries: CaffeineEntry[];
   exportDate: string;
   version: string;
 }

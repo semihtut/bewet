@@ -15,6 +15,11 @@ const DEFAULT_SETTINGS: AppSettings = {
     endMinute: 0,
     intervalMinutes: 120,
   },
+  caffeineSettings: {
+    enabled: true,
+    teaPenaltyMl: 250,
+    coffeePenaltyMl: 250,
+  },
 };
 
 export function useSettings() {

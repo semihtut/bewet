@@ -2,15 +2,27 @@ import { GlassCard } from '@/components/ui';
 import { WeekChart } from '@/components/WeekChart';
 import { useI18n } from '@/lib/i18n';
 import { useHydration } from '@/hooks/useHydration';
+import { useCaffeine } from '@/hooks/useCaffeine';
 import { formatRelativeDate, cn } from '@/lib/utils';
+import type { CaffeineSettings } from '@/types';
 
 interface HistoryProps {
   goal: number;
+  caffeineSettings: CaffeineSettings;
 }
 
-export function History({ goal }: HistoryProps) {
+// Default caffeine settings for migration
+const DEFAULT_CAFFEINE_SETTINGS: CaffeineSettings = {
+  enabled: true,
+  teaPenaltyMl: 250,
+  coffeePenaltyMl: 250,
+};
+
+export function History({ goal, caffeineSettings }: HistoryProps) {
   const { t } = useI18n();
+  const caffSettings = caffeineSettings || DEFAULT_CAFFEINE_SETTINGS;
   const { weekData, weeklyAverage, daysAtGoal, isLoading } = useHydration(goal);
+  const { weekPenalties } = useCaffeine(caffSettings);
 
   if (isLoading) {
     return (
@@ -60,27 +72,40 @@ export function History({ goal }: HistoryProps) {
         {weekData
           .slice()
           .reverse()
-          .map((day) => (
-            <div
-              key={day.date}
-              className="flex items-center justify-between px-4 py-3"
-            >
-              <span className="text-text-primary font-medium">
-                {formatRelativeDate(day.date, t)}
-              </span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    'font-semibold',
-                    day.goalReached ? 'text-success' : 'text-text-primary'
+          .map((day) => {
+            const penalty = weekPenalties.get(day.date) || 0;
+            const effectiveGoal = goal + (caffSettings.enabled ? penalty : 0);
+            const reached = day.total >= effectiveGoal;
+
+            return (
+              <div
+                key={day.date}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <div>
+                  <span className="text-text-primary font-medium">
+                    {formatRelativeDate(day.date, t)}
+                  </span>
+                  {caffSettings.enabled && penalty > 0 && (
+                    <span className="text-xs text-amber-600 ml-2">
+                      ☕ +{penalty}
+                    </span>
                   )}
-                >
-                  {day.total.toLocaleString()} {t('units.ml')}
-                </span>
-                {day.goalReached && <span>✓</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      'font-semibold',
+                      reached ? 'text-success' : 'text-text-primary'
+                    )}
+                  >
+                    {day.total.toLocaleString()} {t('units.ml')}
+                  </span>
+                  {reached && <span>✓</span>}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
       </GlassCard>
     </div>
   );

@@ -13,13 +13,24 @@ interface SettingsProps {
   onUpdate: (updates: Partial<AppSettings>) => Promise<AppSettings>;
 }
 
+// Default caffeine settings for migration
+const DEFAULT_CAFFEINE_SETTINGS = {
+  enabled: true,
+  teaPenaltyMl: 250,
+  coffeePenaltyMl: 250,
+};
+
 export function Settings({ settings, onUpdate }: SettingsProps) {
   const { t, language, setLanguage } = useI18n();
   const { schedule, setSchedule } = useReminderStore();
   const { currentStreak, longestStreak } = useStreakStore();
 
+  // Ensure caffeine settings exist (migration support)
+  const caffeineSettings = settings.caffeineSettings || DEFAULT_CAFFEINE_SETTINGS;
+
   const [showGoalSheet, setShowGoalSheet] = useState(false);
   const [showRemindersSheet, setShowRemindersSheet] = useState(false);
+  const [showCaffeineSheet, setShowCaffeineSheet] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [goalValue, setGoalValue] = useState(settings.dailyGoal);
 
@@ -111,6 +122,22 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
           <span className="text-text-primary">{t('settings.remindersSetup')}</span>
           <span className="text-text-secondary">
             {schedule.enabled ? `${scheduleTimes.length}×` : 'Off'}
+          </span>
+        </button>
+      </GlassCard>
+
+      {/* Caffeine Section */}
+      <p className="text-sm text-text-secondary uppercase tracking-wide mb-2 px-1">
+        {t('settings.caffeine')}
+      </p>
+      <GlassCard className="mb-6">
+        <button
+          onClick={() => setShowCaffeineSheet(true)}
+          className="flex items-center justify-between w-full px-4 py-3 text-left"
+        >
+          <span className="text-text-primary">☕ {t('caffeine.coffee')} / 🍵 {t('caffeine.tea')}</span>
+          <span className="text-text-secondary">
+            {caffeineSettings.enabled ? `${caffeineSettings.coffeePenaltyMl}/${caffeineSettings.teaPenaltyMl} ${t('units.ml')}` : 'Off'}
           </span>
         </button>
       </GlassCard>
@@ -284,6 +311,71 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
               {t('action.delete')}
             </Button>
           </div>
+        </div>
+      </BottomSheet>
+
+      {/* Caffeine Settings Sheet */}
+      <BottomSheet
+        isOpen={showCaffeineSheet}
+        onClose={() => setShowCaffeineSheet(false)}
+        title={t('settings.caffeine')}
+      >
+        <div className="space-y-4">
+          <Toggle
+            checked={caffeineSettings.enabled}
+            onChange={(enabled) => onUpdate({
+              caffeineSettings: { ...caffeineSettings, enabled }
+            })}
+            label={t('settings.caffeineEnable')}
+          />
+
+          {caffeineSettings.enabled && (
+            <>
+              <div>
+                <label className="block text-sm text-text-secondary mb-2">
+                  ☕ {t('settings.coffeePenalty')}
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {[0, 125, 250, 375, 500].map((ml) => (
+                    <Button
+                      key={ml}
+                      variant={caffeineSettings.coffeePenaltyMl === ml ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => onUpdate({
+                        caffeineSettings: { ...caffeineSettings, coffeePenaltyMl: ml }
+                      })}
+                    >
+                      {ml} {t('units.ml')}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-text-secondary mb-2">
+                  🍵 {t('settings.teaPenalty')}
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {[0, 125, 250, 375, 500].map((ml) => (
+                    <Button
+                      key={ml}
+                      variant={caffeineSettings.teaPenaltyMl === ml ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => onUpdate({
+                        caffeineSettings: { ...caffeineSettings, teaPenaltyMl: ml }
+                      })}
+                    >
+                      {ml} {t('units.ml')}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs text-text-muted pt-2">
+                {t('settings.penaltyNote')}
+              </p>
+            </>
+          )}
         </div>
       </BottomSheet>
     </div>
